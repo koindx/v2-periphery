@@ -1,13 +1,157 @@
 syntax = "proto3";
-
 package periphery;
+import "koinos/options.proto";
 
-// @description Says Hello!
-// @read-only true
-message hello_arguments {
-  string name = 1;
-}
-
-message hello_result {
+/*
+* Objects
+*/
+message str {
   string value = 1;
 }
+message uint32 {
+  uint32 value = 1;
+}
+message uint64 {
+  uint64 value = 1 [jstype = JS_STRING];
+}
+message address {
+  bytes value = 1 [(koinos.btype) = ADDRESS];
+}
+message boole {
+  bool value = 1;
+}
+message empty_object {
+}
+message configs_object {
+  bool fee_on = 1;
+  bytes fee_to = 2 [(koinos.btype) = ADDRESS];
+}
+
+/*
+* Keys
+*/
+message pair_key {
+  bytes token_a = 1;
+  bytes token_b = 2;
+}
+
+/*
+* RPC calls
+*/
+
+// @description Authorize of protocol
+// @read-only false
+// @result boole
+message authorize_update_arguments {
+  bytes hash = 1;
+}
+
+// @description Get configs of protocol
+// @read-only true
+// @result configs_object
+message get_config_arguments {}
+
+// @description Set configs of protocol
+// @read-only false
+// @result empty_object
+message set_config_arguments  {
+  configs_object value = 1;
+}
+
+// @description get address of a pair
+// @read-only true
+// @result address
+message get_pair_arguments  {
+  bytes token_a  = 1 [(koinos.btype) = ADDRESS];
+  bytes token_b  = 2 [(koinos.btype) = ADDRESS];
+}
+
+// @description Add liquidity to pair
+// @read-only false
+// @result empty_object
+message initialize_pair_arguments {
+  bytes token_a = 1 [(koinos.btype) = ADDRESS];
+  bytes token_b = 2 [(koinos.btype) = ADDRESS];
+}
+
+// @description Add liquidity to pair
+// @read-only false
+message add_liquidity_arguments {
+  bytes token_a = 1 [(koinos.btype) = ADDRESS];
+  bytes token_b = 2 [(koinos.btype) = ADDRESS];
+  uint64 amount_a_desired = 3 [jstype = JS_STRING];
+  uint64 amount_b_desired = 4 [jstype = JS_STRING];
+  uint64 amount_a_min = 5 [jstype = JS_STRING];
+  uint64 amount_b_min = 6 [jstype = JS_STRING];
+}
+message add_liquidity_result {
+  uint64 liquidity = 1 [jstype = JS_STRING];
+  uint64 amount_a = 2 [jstype = JS_STRING];
+  uint64 amount_b = 3 [jstype = JS_STRING];
+}
+
+// @description Remove liquidity from pair
+// @read-only false
+message remove_liquidity_arguments {
+  bytes token_a = 1 [(koinos.btype) = ADDRESS];
+  bytes token_b = 2 [(koinos.btype) = ADDRESS];
+  uint64 liquidity = 3 [jstype = JS_STRING];
+  uint64 amount_a_min = 4 [jstype = JS_STRING];
+  uint64 amount_b_min = 5 [jstype = JS_STRING];
+}
+message remove_liquidity_result {
+  uint64 amount_a = 1 [jstype = JS_STRING];
+  uint64 amount_b = 2 [jstype = JS_STRING];
+}
+
+
+// @description Swap tokens with exact input
+// @read-only false
+// @result empty_object
+message swap_tokens_in_arguments {
+  uint64 amount_in = 1 [jstype = JS_STRING];
+  uint64 amount_out_min = 2 [jstype = JS_STRING];
+  repeated string path = 3;
+  bytes receiver = 4 [(koinos.btype) = ADDRESS];
+}
+
+// @description Swap tokens with exact output
+// @read-only false
+// @result empty_object
+message swap_tokens_out_arguments {
+  uint64 amount_out = 1 [jstype = JS_STRING];
+  uint64 amount_in_max = 2 [jstype = JS_STRING];
+  repeated string path = 3;
+  bytes receiver = 4 [(koinos.btype) = ADDRESS];
+}
+
+// @description Get quote depending on reservations
+// @read-only true
+// @result uint64
+message get_quote_arguments {
+  uint64 amount_in  = 1 [jstype = JS_STRING];
+  uint64 reserve_a  = 2 [jstype = JS_STRING];
+  uint64 reserve_b  = 3 [jstype = JS_STRING];
+}
+
+// @description Get amounts out
+// @read-only true
+// @result uint64
+message get_amount_out_arguments {
+  uint64 amount_in  = 1 [jstype = JS_STRING];
+  uint64 reserve_a  = 2 [jstype = JS_STRING];
+  uint64 reserve_b  = 3 [jstype = JS_STRING];
+}
+
+// @description Get amounts in
+// @read-only true
+// @result uint64
+message get_amount_in_arguments {
+  uint64 amount_out  = 1 [jstype = JS_STRING];
+  uint64 reserve_a  = 2 [jstype = JS_STRING];
+  uint64 reserve_b  = 3 [jstype = JS_STRING];
+}
+
+/*
+* Events
+*/
