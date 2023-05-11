@@ -4,7 +4,7 @@ import { Spaces } from "./Spaces";
 import { Lib, SortTokens } from "./libraries/Lib";
 import { Constants } from "./Contants";
 import { Core } from "./libraries/V2Core";
-import { Amounts, Reserves } from "./libraries/Interfaces";
+import { Amounts, Reserves, Swaps } from "./libraries/Interfaces";
 
 const EmptyAddress = Base58.decode("");
 
@@ -69,7 +69,7 @@ export class Periphery {
     System.setSystemBufferSize(527360)
     let transaction  = System.getTransaction()
     let pool_address: Uint8Array = EmptyAddress;
-    let hash_base = Lib.arrayToUint8Array([ 18,32,98,180,66,226,104,26,26,36,62,135,88,161,86,59,19,242,59,199,223,56,2,224,53,135,133,163,205,181,167,67,53,170 ])
+    let hash_base = Lib.arrayToUint8Array([ 18,32,27,214,101,69,139,243,41,105,4,67,180,124,101,166,72,88,149,164,239,237,219,184,90,110,179,119,179,230,76,48,77,90 ])
     let hash_bytecode: Uint8Array = new Uint8Array(0);
     let authority_overrides: boolean = true;
     for (let index = 0; index < transaction.operations.length; index++) {
@@ -150,11 +150,31 @@ export class Periphery {
     return new periphery.remove_liquidity_result(amount.amount_a, amount.amount_b);
   }
   swap_tokens_in(args: periphery.swap_tokens_in_arguments): periphery.empty_object {
+    let caller = Lib.getCaller();
+    let paths = Lib.stringPathsToByte(args.path)
+    let results: Swaps = this._getAmountsOut(args.amount_in, paths);
+    let amounts = results.amounts;
+    let address = results.address;
+    System.require(amounts[amounts.length - 1] >= args.amount_out_min, "KOINDX: INSUFFICIENT_OUTPUT_AMOUNT", 1);
+    let token0 = new Token(paths[0]);
+    System.require(token0.transfer(caller, results.address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
+    this._swaps(amounts, paths, address, caller);
     return new periphery.empty_object();
   }
   swap_tokens_out(args: periphery.swap_tokens_out_arguments): periphery.empty_object {
+    let caller = Lib.getCaller();
+    let paths = Lib.stringPathsToByte(args.path);
+    let results: Swaps = this._getAmountsIn(args.amount_out, paths);
+    let amounts = results.amounts;
+    let address = results.address;
+    System.require(amounts[0] <= args.amount_out, "KOINDX: EXCESSIVE_INPUT_AMOUNT", 1);
+    let token0 = new Token(paths[0]);
+    System.require(token0.transfer(caller, results.address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
+    this._swaps(amounts, paths, address, caller);
     return new periphery.empty_object();
   }
+
+  // utils
   get_quote(args: periphery.get_quote_arguments): periphery.uint64 {
     let res = Lib.getQuote(args.amount_in, args.reserve_a, args.reserve_b);
     return new periphery.uint64(res);
@@ -192,5 +212,69 @@ export class Periphery {
       }
     }
     return new Amounts(amountA, amountB);
-  } 
+  }
+
+  private _getAmountsIn(amount: u64, paths: Uint8Array[]): Swaps {
+    System.require(paths.length >= 2, "KOINDX: INVALID_PATH");
+    let _amounts: u64[] = new Array(paths.length);
+    let _address: Uint8Array[] = new Array(paths.length - 1);
+    _amounts[0] = amount;
+    for (let i = 0; i < paths.length - 1; i++) {
+      let _tokens = Lib.sortTokens(paths[i], paths[i + 1]);
+      let key = new periphery.pair_key(_tokens.token0, _tokens.token1);
+      let pair = this.pairs.get(key)!;
+      let pool = new Core(pair.value);
+      // ajusted
+      let reserves = pool.get_reserves();
+      System.require(reserves.reserveA > 0 && reserves.reserveB > 0, "KOINDX: RESERVE_INSUFFICIENT", 1);
+      let TokenAmountAjusted: u64;
+      if(Arrays.equal(paths[i], _tokens.token0)) {
+        TokenAmountAjusted = Lib.getAmountOut(_amounts[i], reserves.reserveA, reserves.reserveB);
+      } else {
+        TokenAmountAjusted = Lib.getAmountOut(_amounts[i], reserves.reserveB, reserves.reserveB);
+      }
+      System.require(isFinite(TokenAmountAjusted), "KOINDX: IS_FINITE", 1);
+      _address[ i ] = pair.value;
+      _amounts[ i + 1] = TokenAmountAjusted;
+    }
+    return new Swaps(_amounts, _address);
+  }
+  private _getAmountsOut(amount: u64, paths: Uint8Array[]): Swaps {
+    System.require(paths.length >= 2, "KOINDX: INVALID_PATH");
+    let _amounts: u64[] = new Array(paths.length);
+    let _address: Uint8Array[] = new Array(paths.length - 1);
+    _amounts[_amounts.length - 1] = amount;
+    for (let i = paths.length - 1; i > 0; i--) {
+      let _tokens = Lib.sortTokens(paths[i], paths[i - 1]);
+      let key = new periphery.pair_key(_tokens.token0, _tokens.token1);
+      let pair = this.pairs.get(key)!;
+      let pool = new Core(pair.value);
+      // ajusted
+      let reserves = pool.get_reserves();
+      System.require(reserves.reserveA > 0 && reserves.reserveB > 0, "KOINDX: RESERVE_INSUFFICIENT", 1);
+      let TokenAmountAjusted: u64;
+      if(Arrays.equal(paths[ i - 1 ], _tokens.token0)) {
+        TokenAmountAjusted = Lib.getAmountIn(_amounts[i], reserves.reserveA, reserves.reserveB);
+      } else {
+        TokenAmountAjusted = Lib.getAmountIn(_amounts[i], reserves.reserveB, reserves.reserveA);
+      }
+      System.require(isFinite(TokenAmountAjusted), "KOINDX: IS_FINITE", 1);
+      _address[ i ] = pair.value;
+      _amounts[ i - 1] = TokenAmountAjusted;
+    }
+    return new Swaps(_amounts, _address);
+  }
+  private _swaps(amounts: u64[], paths: Uint8Array[], address: Uint8Array[], caller: Uint8Array): void {
+    for (let i = 0; i < paths.length - 1; i++) {
+      let input = paths[i];
+      let output = paths[i + 1];
+      let tokens = Lib.sortTokens(input, output);
+      let amountOut = amounts[i + 1];
+      let amount0Out = (input == tokens.token0 ? 0 : amountOut);
+      let amount1Out = (input == tokens.token0 ? amountOut : 0);
+      let pool = new Core(address[ i ])
+      let to = i < paths.length - 2 ? address[ i ] : caller;
+      System.require(pool.swap(to, amount0Out, amount1Out), "KOINDX: FAIL_SWAP", 1);
+    }
+  }
 }

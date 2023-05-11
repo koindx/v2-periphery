@@ -15,3 +15,13 @@ export class Reserves {
     this.reserveB = _amountB;
   }
 }
+
+
+export class Swaps {
+  amounts: u64[]
+  address: Uint8Array[]
+  constructor(_amounts: u64[], _address: Uint8Array[]) {
+    this.amounts = _amounts;
+    this.address = _address;
+  }
+}
