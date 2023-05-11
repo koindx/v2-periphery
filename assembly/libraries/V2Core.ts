@@ -10,9 +10,9 @@ enum entries {
   balance_of_entry = 0x5c721497,
   transfer_entry = 0x27f576ca,
   // core
-  initialize_entry = 0x82a3537f,
-  swap_entry = 0x82a3537f,
-  get_reserves_entry = 0x82a3537f,
+  initialize_entry = 0x470ebe82,
+  swap_entry = 0xda47c2f4,
+  get_reserves_entry = 0x6d0c5abf,
 }
 
 export class Core {
