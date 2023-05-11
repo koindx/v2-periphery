@@ -129,7 +129,7 @@ message swap_tokens_out_arguments {
 // @read-only true
 // @result uint64
 message get_quote_arguments {
-  uint64 amount_in  = 1 [jstype = JS_STRING];
+  uint64 amount  = 1 [jstype = JS_STRING];
   uint64 reserve_a  = 2 [jstype = JS_STRING];
   uint64 reserve_b  = 3 [jstype = JS_STRING];
 }

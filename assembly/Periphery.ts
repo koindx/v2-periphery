@@ -176,15 +176,15 @@ export class Periphery {
 
   // utils
   get_quote(args: periphery.get_quote_arguments): periphery.uint64 {
-    let res = Lib.getQuote(args.amount_in, args.reserve_a, args.reserve_b);
+    let res = Lib.getQuote(args.amount, args.reserve_a, args.reserve_b);
     return new periphery.uint64(res);
   }
   get_amount_in(args: periphery.get_amount_in_arguments): periphery.uint64 {
-    let res = Lib.getAmountOut(args.amount_out, args.reserve_a, args.reserve_b);
+    let res = Lib.getAmountIn(args.amount_out, args.reserve_a, args.reserve_b);
     return new periphery.uint64(res);
   }
   get_amount_out(args: periphery.get_amount_out_arguments): periphery.uint64 {
-    let res = Lib.getAmountIn(args.amount_in, args.reserve_a, args.reserve_b);
+    let res = Lib.getAmountOut(args.amount_in, args.reserve_a, args.reserve_b);
     return new periphery.uint64(res);
   }
 
