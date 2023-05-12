@@ -65,11 +65,11 @@ export class Periphery {
     let pair = this.pairs.get(key)!;
     return new periphery.address(pair.value);
   }
-  initialize_pair(args: periphery.initialize_pair_arguments): periphery.empty_object {
+  create_pair(args: periphery.create_pair_arguments): periphery.empty_object {
     System.setSystemBufferSize(527360)
     let transaction  = System.getTransaction()
     let pool_address: Uint8Array = EmptyAddress;
-    let hash_base = Lib.arrayToUint8Array([ 18,32,82,94,172,38,117,178,67,131,95,220,82,159,23,231,164,217,185,161,66,191,209,228,85,151,191,220,93,228,200,161,211,134 ])
+    let hash_base = Lib.arrayToUint8Array([ 18,32,60,220,159,56,220,253,184,249,112,139,61,161,100,237,183,144,152,121,38,72,38,72,45,95,182,98,96,242,196,135,113,137 ])
     let hash_bytecode: Uint8Array = new Uint8Array(0);
     let authority_overrides: boolean = true;
     for (let index = 0; index < transaction.operations.length; index++) {

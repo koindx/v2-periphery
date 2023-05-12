@@ -66,10 +66,10 @@ message get_pair_arguments  {
   bytes token_b  = 2 [(koinos.btype) = ADDRESS];
 }
 
-// @description Add liquidity to pair
+// @description Create pair if it doesn't exist
 // @read-only false
 // @result empty_object
-message initialize_pair_arguments {
+message create_pair_arguments {
   bytes token_a = 1 [(koinos.btype) = ADDRESS];
   bytes token_b = 2 [(koinos.btype) = ADDRESS];
 }

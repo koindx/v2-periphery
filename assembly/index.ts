@@ -49,12 +49,12 @@ export function main(): i32 {
       break;
     }
 
-    case 0xe0f47477: {
-      const args = Protobuf.decode<ProtoNamespace.initialize_pair_arguments>(
+    case 0x286b1165: {
+      const args = Protobuf.decode<ProtoNamespace.create_pair_arguments>(
         contractArgs.args,
-        ProtoNamespace.initialize_pair_arguments.decode
+        ProtoNamespace.create_pair_arguments.decode
       );
-      const res = c.initialize_pair(args);
+      const res = c.create_pair(args);
       retbuf = Protobuf.encode(res, ProtoNamespace.empty_object.encode);
       break;
     }
