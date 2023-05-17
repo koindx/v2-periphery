@@ -152,7 +152,7 @@ export class Periphery {
   swap_tokens_in(args: periphery.swap_tokens_in_arguments): periphery.empty_object {
     let caller = Lib.getCaller();
     let paths = Lib.stringPathsToByte(args.path)
-    let results: Swaps = this._getAmountsOut(args.amount_in, paths);
+    let results: Swaps = this._getAmountsIn(args.amount_in, paths);
     let amounts = results.amounts;
     let address = results.address;
     System.require(amounts[amounts.length - 1] >= args.amount_out_min, "KOINDX: INSUFFICIENT_OUTPUT_AMOUNT", 1);
@@ -164,7 +164,7 @@ export class Periphery {
   swap_tokens_out(args: periphery.swap_tokens_out_arguments): periphery.empty_object {
     let caller = Lib.getCaller();
     let paths = Lib.stringPathsToByte(args.path);
-    let results: Swaps = this._getAmountsIn(args.amount_out, paths);
+    let results: Swaps = this._getAmountsOut(args.amount_out, paths);
     let amounts = results.amounts;
     let address = results.address;
     System.require(amounts[0] <= args.amount_out, "KOINDX: EXCESSIVE_INPUT_AMOUNT", 1);
@@ -270,8 +270,8 @@ export class Periphery {
       let output = paths[i + 1];
       let tokens = Lib.sortTokens(input, output);
       let amountOut = amounts[i + 1];
-      let amount0Out = (input == tokens.token0 ? 0 : amountOut);
-      let amount1Out = (input == tokens.token0 ? amountOut : 0);
+      let amount0Out = (Arrays.equal(input, tokens.token0) ? 0 : amountOut);
+      let amount1Out = (Arrays.equal(input, tokens.token0) ? amountOut : 0);
       let pool = new Core(address[ i ])
       let to = i < paths.length - 2 ? address[ i ] : caller;
       System.require(pool.swap(to, amount0Out, amount1Out), "KOINDX: FAIL_SWAP", 1);
