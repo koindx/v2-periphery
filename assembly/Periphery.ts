@@ -158,7 +158,7 @@ export class Periphery {
     System.require(amounts[amounts.length - 1] >= args.amount_out_min, "KOINDX: INSUFFICIENT_OUTPUT_AMOUNT", 1);
     let token0 = new Token(paths[0]);
     System.require(token0.transfer(caller, results.address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
-    this._swaps(amounts, paths, address, caller);
+    this._swaps(amounts, paths, address, args.receiver);
     return new periphery.empty_object();
   }
   swap_tokens_out(args: periphery.swap_tokens_out_arguments): periphery.empty_object {
@@ -170,7 +170,7 @@ export class Periphery {
     System.require(amounts[0] <= args.amount_out, "KOINDX: EXCESSIVE_INPUT_AMOUNT", 1);
     let token0 = new Token(paths[0]);
     System.require(token0.transfer(caller, results.address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
-    this._swaps(amounts, paths, address, caller);
+    this._swaps(amounts, paths, address, args.receiver);
     return new periphery.empty_object();
   }
 
@@ -264,7 +264,7 @@ export class Periphery {
     }
     return new Swaps(_amounts, _address);
   }
-  private _swaps(amounts: u64[], paths: Uint8Array[], address: Uint8Array[], caller: Uint8Array): void {
+  private _swaps(amounts: u64[], paths: Uint8Array[], address: Uint8Array[], receiver: Uint8Array): void {
     for (let i = 0; i < paths.length - 1; i++) {
       let input = paths[i];
       let output = paths[i + 1];
@@ -273,7 +273,7 @@ export class Periphery {
       let amount0Out = (Arrays.equal(input, tokens.token0) ? 0 : amountOut);
       let amount1Out = (Arrays.equal(input, tokens.token0) ? amountOut : 0);
       let pool = new Core(address[ i ])
-      let to = i < paths.length - 2 ? address[ i ] : caller;
+      let to = i < paths.length - 2 ? address[ i ] : receiver;
       System.require(pool.swap(to, amount0Out, amount1Out), "KOINDX: FAIL_SWAP", 1);
     }
   }
