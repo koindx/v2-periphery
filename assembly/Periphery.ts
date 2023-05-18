@@ -223,6 +223,7 @@ export class Periphery {
       let _tokens = Lib.sortTokens(paths[i], paths[i + 1]);
       let key = new periphery.pair_key(_tokens.token0, _tokens.token1);
       let pair = this.pairs.get(key)!;
+      System.require(pair.value.length, "KOINDX: PAIR_NOT_EXIST", 1);
       let pool = new Core(pair.value);
       // ajusted
       let reserves = pool.get_reserves();
@@ -248,6 +249,7 @@ export class Periphery {
       let _tokens = Lib.sortTokens(paths[i], paths[i - 1]);
       let key = new periphery.pair_key(_tokens.token0, _tokens.token1);
       let pair = this.pairs.get(key)!;
+      System.require(pair.value.length, "KOINDX: PAIR_NOT_EXIST", 1);
       let pool = new Core(pair.value);
       // ajusted
       let reserves = pool.get_reserves();
