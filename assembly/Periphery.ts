@@ -115,13 +115,29 @@ export class Periphery {
     let pool = new Core(pair.value);
     System.require(pair.value.length, "KOINDX: PAIR_NOT_INITIALIZED", 1);
     System.require((args.amount_a_desired>0 || args.amount_b_desired>0 || args.amount_a_min>0 || args.amount_b_min>0), "KOINDX: INVALID_AMOUNTS", 1);
-    let amounts = this._addLiquidity(pool, args.amount_a_desired, args.amount_b_desired, args.amount_a_min, args.amount_b_min);
+
+    // sort reserves
+    let _reserves: Reserves = pool.get_reserves();
+    let reserves = _reserves;
+    if(!Arrays.equal(tokens.token0, args.token_a)) {
+      reserves.reserveA = _reserves.reserveB;
+      reserves.reserveB = _reserves.reserveA;
+    }
+
+    let amounts = this._addLiquidity(reserves, args.amount_a_desired, args.amount_b_desired, args.amount_a_min, args.amount_b_min);
     // transfer tokens
     let caller = Lib.getCaller();
     let token_a = new Token(tokens.token0);
     let token_b = new Token(tokens.token1);
-    System.require(token_a.transfer(caller, pair.value, amounts.amountA), "KOINDX: FAIL_TRANSFER_TOKEN_A", 1);
-    System.require(token_b.transfer(caller, pair.value, amounts.amountB), "KOINDX: FAIL_TRANSFER_TOKEN_B", 1);
+
+    // sort token transfers
+    if(Arrays.equal(tokens.token0, args.token_a)) {
+      System.require(token_a.transfer(caller, pair.value, amounts.amountA), "KOINDX: FAIL_TRANSFER_TOKEN_A", 1);
+      System.require(token_b.transfer(caller, pair.value, amounts.amountB), "KOINDX: FAIL_TRANSFER_TOKEN_B", 1);
+    } else {
+      System.require(token_a.transfer(caller, pair.value, amounts.amountB), "KOINDX: FAIL_TRANSFER_TOKEN_A", 1);
+      System.require(token_b.transfer(caller, pair.value, amounts.amountA), "KOINDX: FAIL_TRANSFER_TOKEN_B", 1);
+    }
     // mint liquidity
     let _fee: Uint8Array = EmptyAddress;
     if(config.fee_on) {
@@ -188,23 +204,20 @@ export class Periphery {
     return new periphery.uint64(res);
   }
 
-  private _addLiquidity(pool: Core, amountADesired: u64, amountBDesired: u64, amountAMin: u64, amountBMin: u64): Amounts {
+  private _addLiquidity(reserves: Reserves, amountADesired: u64, amountBDesired: u64, amountAMin: u64, amountBMin: u64): Amounts {
     let amountA: u64;
     let amountB: u64;
-    let reserves: Reserves = pool.get_reserves()
-    let reserveA = reserves.reserveA;
-    let reserveB = reserves.reserveB;
     if (reserves.reserveA == 0 && reserves.reserveB == 0) {
       amountA = amountADesired;
       amountB = amountBDesired;
     } else {
-      let amountBOptimal = Lib.getQuote(amountADesired, reserveA, reserveB);
+      let amountBOptimal = Lib.getQuote(amountADesired, reserves.reserveA, reserves.reserveB);
       if (amountBOptimal <= amountBDesired) {
         System.require(amountBOptimal >= amountBMin, 'KOINDX: INSUFFICIENT_B_AMOUNT', 1);
         amountA = amountADesired;
         amountB = amountBOptimal;
       } else {
-        let amountAOptimal = Lib.getQuote(amountBDesired, reserveB, reserveA);
+        let amountAOptimal = Lib.getQuote(amountBDesired, reserves.reserveB, reserves.reserveA);
         System.require(amountAOptimal <= amountADesired, '', 1);
         System.require(amountAOptimal >= amountAMin, 'KOINDX: INSUFFICIENT_A_AMOUNT', 1);
         amountA = amountAOptimal;
@@ -232,7 +245,7 @@ export class Periphery {
       if(Arrays.equal(paths[i], _tokens.token0)) {
         TokenAmountAjusted = Lib.getAmountOut(_amounts[i], reserves.reserveA, reserves.reserveB);
       } else {
-        TokenAmountAjusted = Lib.getAmountOut(_amounts[i], reserves.reserveB, reserves.reserveB);
+        TokenAmountAjusted = Lib.getAmountOut(_amounts[i], reserves.reserveB, reserves.reserveA);
       }
       System.require(isFinite(TokenAmountAjusted), "KOINDX: IS_FINITE", 1);
       _address[ i ] = pair.value;
