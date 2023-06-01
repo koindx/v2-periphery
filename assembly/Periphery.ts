@@ -69,7 +69,7 @@ export class Periphery {
     System.setSystemBufferSize(527360)
     let transaction  = System.getTransaction()
     let pool_address: Uint8Array = EmptyAddress;
-    let hash_base = Lib.arrayToUint8Array([ 18,32,89,144,155,202,223,110,105,171,99,137,156,176,45,109,121,30,136,139,202,208,154,78,224,108,127,11,213,236,34,73,238,11 ])
+    let hash_base = Lib.arrayToUint8Array([ 18,32,243,102,83,24,61,170,106,81,10,248,44,137,178,20,225,95,17,97,112,25,194,107,82,255,22,86,4,75,143,21,143,245 ])
     let hash_bytecode: Uint8Array = new Uint8Array(0);
     let authority_overrides: boolean = true;
     for (let index = 0; index < transaction.operations.length; index++) {
