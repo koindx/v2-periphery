@@ -118,8 +118,11 @@ export class Periphery {
 
     // sort reserves
     let _reserves: Reserves = pool.get_reserves();
-    let reserves = _reserves;
-    if(!Arrays.equal(tokens.token0, args.token_a)) {
+    let reserves: Reserves = new Reserves(0, 0);
+    if(Arrays.equal(tokens.token0, args.token_a)) {
+      reserves.reserveA = _reserves.reserveA;
+      reserves.reserveB = _reserves.reserveB;
+    } else {
       reserves.reserveA = _reserves.reserveB;
       reserves.reserveB = _reserves.reserveA;
     }
