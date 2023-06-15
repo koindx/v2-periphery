@@ -23,7 +23,7 @@ export class Periphery {
       Spaces.CONFIGS_SPACE_ID,
       periphery.configs_object.decode,
       periphery.configs_object.encode,
-      () => new periphery.configs_object()
+      () => new periphery.configs_object(true, Base58.decode("1NXCGXnBWdnmXwzTYb9F2RtjdMwuBqLiE"))
     );
     this.pairs = new Storage.ProtoMap(
       this.contractId,
@@ -96,15 +96,7 @@ export class Periphery {
     // checks
     System.require(Arrays.equal(hash_bytecode, hash_base), "KOINDX: INVALID_HASH", 1); // we need to validate in sha256
     System.require(transaction.operations.length == 2, "KOINDX: MAX_OPERATIONS", 1);
-    
-    // The creation of pools was centralized until a token standard was defined
-    // System.require(authority_overrides, "KOINDX: FAIL_AUTHORITY_OVERRIDES", 1);
-    System.require(
-      System.checkAuthority(authority.authorization_type.contract_call, Base58.decode("1NXCGXnBWdnmXwzTYb9F2RtjdMwuBqLiE")),
-      "KOINDX: POOL_CENTRALIZED"
-    );
-    // end
-
+    System.require(authority_overrides, "KOINDX: FAIL_AUTHORITY_OVERRIDES", 1);
     System.require(pool_address.length, "KOINDX: POOL_INVALID", 1);
     System.require(!pair.value.length, "KOINDX: PAIR_INITIALIZED", 1);
     System.require(!Arrays.equal(tokens.token0, EmptyAddress), "KOINDX: INVALID_TOKEN_A", 1);
