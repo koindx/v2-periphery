@@ -176,7 +176,7 @@ export class Periphery {
     let address = results.address;
     System.require(amounts[amounts.length - 1] >= args.amount_out_min, "KOINDX: INSUFFICIENT_OUTPUT_AMOUNT", 1);
     let token0 = new Token(paths[0]);
-    System.require(token0.transfer(caller, results.address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
+    System.require(token0.transfer(caller, address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
     this._swaps(amounts, paths, address, args.receiver);
     return new periphery.empty_object();
   }
@@ -186,9 +186,9 @@ export class Periphery {
     let results: Swaps = this._getAmountsOut(args.amount_out, paths);
     let amounts = results.amounts;
     let address = results.address;
-    System.require(amounts[0] <= args.amount_out, "KOINDX: EXCESSIVE_INPUT_AMOUNT", 1);
+    System.require(amounts[0] <= args.amount_in_max, "KOINDX: EXCESSIVE_INPUT_AMOUNT", 1);
     let token0 = new Token(paths[0]);
-    System.require(token0.transfer(caller, results.address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
+    System.require(token0.transfer(caller, address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
     this._swaps(amounts, paths, address, args.receiver);
     return new periphery.empty_object();
   }
@@ -252,7 +252,7 @@ export class Periphery {
       }
       System.require(isFinite(TokenAmountAjusted), "KOINDX: IS_FINITE", 1);
       _address[ i ] = pair.value;
-      _amounts[ i + 1] = TokenAmountAjusted;
+      _amounts[ i + 1 ] = TokenAmountAjusted;
     }
     return new Swaps(_amounts, _address);
   }
@@ -277,8 +277,8 @@ export class Periphery {
         TokenAmountAjusted = Lib.getAmountIn(_amounts[i], reserves.reserveB, reserves.reserveA);
       }
       System.require(isFinite(TokenAmountAjusted), "KOINDX: IS_FINITE", 1);
-      _address[ i ] = pair.value;
-      _amounts[ i - 1] = TokenAmountAjusted;
+      _address[ i - 1 ] = pair.value;
+      _amounts[ i - 1 ] = TokenAmountAjusted;
     }
     return new Swaps(_amounts, _address);
   }
