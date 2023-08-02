@@ -2,5 +2,5 @@ import { Base58, StringBytes } from "@koinos/sdk-as";
 
 export namespace Constants {
   export const GOVERNANCE_CONTRACT_ID = Base58.decode('');
-  export const HASH_BYTECODE: u8[] = [ 18,32,160,174,149,54,162,234,75,137,95,160,233,175,252,234,225,210,246,17,242,46,254,82,28,75,166,35,247,142,176,247,4,241 ];
+  export const HASH_BYTECODE: u8[] = [ 18,32,9,198,132,177,155,6,117,46,67,15,167,238,106,192,107,211,238,73,50,220,96,140,176,214,8,186,66,69,230,165,84,232 ];
 }
