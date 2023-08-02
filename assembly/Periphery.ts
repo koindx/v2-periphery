@@ -23,7 +23,7 @@ export class Periphery {
       Spaces.CONFIGS_SPACE_ID,
       periphery.configs_object.decode,
       periphery.configs_object.encode,
-      () => new periphery.configs_object(true, Base58.decode("1NXCGXnBWdnmXwzTYb9F2RtjdMwuBqLiE"))
+      () => new periphery.configs_object(true, Base58.decode("186Y4Y7naHg7HKNQiddq1DhLgJyzsTEime"))
     );
     this.pairs = new Storage.ProtoMap(
       this.contractId,
