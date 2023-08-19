@@ -31,8 +31,8 @@ message configs_object {
 * Keys
 */
 message pair_key {
-  bytes token_a = 1;
-  bytes token_b = 2;
+  string token_a = 1;
+  string token_b = 2;
 }
 
 /*
@@ -62,27 +62,29 @@ message set_config_arguments  {
 // @read-only true
 // @result address
 message get_pair_arguments  {
-  bytes token_a  = 1 [(koinos.btype) = ADDRESS];
-  bytes token_b  = 2 [(koinos.btype) = ADDRESS];
+  string token_a  = 1;
+  string token_b  = 2;
 }
 
 // @description Create pair if it doesn't exist
 // @read-only false
 // @result empty_object
 message create_pair_arguments {
-  bytes token_a = 1 [(koinos.btype) = ADDRESS];
-  bytes token_b = 2 [(koinos.btype) = ADDRESS];
+  string token_a = 1;
+  string token_b = 2;
 }
 
 // @description Add liquidity to pair
 // @read-only false
 message add_liquidity_arguments {
-  bytes token_a = 1 [(koinos.btype) = ADDRESS];
-  bytes token_b = 2 [(koinos.btype) = ADDRESS];
-  uint64 amount_a_desired = 3 [jstype = JS_STRING];
-  uint64 amount_b_desired = 4 [jstype = JS_STRING];
-  uint64 amount_a_min = 5 [jstype = JS_STRING];
-  uint64 amount_b_min = 6 [jstype = JS_STRING];
+  bytes from = 1 [(koinos.btype) = ADDRESS];
+  bytes receiver = 2 [(koinos.btype) = ADDRESS];
+  string token_a = 3;
+  string token_b = 4;
+  uint64 amount_a_desired = 5 [jstype = JS_STRING];
+  uint64 amount_b_desired = 6 [jstype = JS_STRING];
+  uint64 amount_a_min = 7 [jstype = JS_STRING];
+  uint64 amount_b_min = 8 [jstype = JS_STRING];
 }
 message add_liquidity_result {
   uint64 liquidity = 1 [jstype = JS_STRING];
@@ -93,11 +95,13 @@ message add_liquidity_result {
 // @description Remove liquidity from pair
 // @read-only false
 message remove_liquidity_arguments {
-  bytes token_a = 1 [(koinos.btype) = ADDRESS];
-  bytes token_b = 2 [(koinos.btype) = ADDRESS];
-  uint64 liquidity = 3 [jstype = JS_STRING];
-  uint64 amount_a_min = 4 [jstype = JS_STRING];
-  uint64 amount_b_min = 5 [jstype = JS_STRING];
+  bytes from = 1 [(koinos.btype) = ADDRESS];
+  bytes receiver = 2 [(koinos.btype) = ADDRESS];
+  string token_a = 3;
+  string token_b = 4;
+  uint64 liquidity = 5 [jstype = JS_STRING];
+  uint64 amount_a_min = 6 [jstype = JS_STRING];
+  uint64 amount_b_min = 7 [jstype = JS_STRING];
 }
 message remove_liquidity_result {
   uint64 amount_a = 1 [jstype = JS_STRING];
@@ -109,20 +113,22 @@ message remove_liquidity_result {
 // @read-only false
 // @result empty_object
 message swap_tokens_in_arguments {
-  uint64 amount_in = 1 [jstype = JS_STRING];
-  uint64 amount_out_min = 2 [jstype = JS_STRING];
-  repeated string path = 3;
-  bytes receiver = 4 [(koinos.btype) = ADDRESS];
+  bytes from = 1 [(koinos.btype) = ADDRESS];
+  bytes receiver = 2 [(koinos.btype) = ADDRESS];
+  uint64 amount_in = 3 [jstype = JS_STRING];
+  uint64 amount_out_min = 4 [jstype = JS_STRING];
+  repeated string path = 5;
 }
 
 // @description Swap tokens with exact output
 // @read-only false
 // @result empty_object
 message swap_tokens_out_arguments {
-  uint64 amount_out = 1 [jstype = JS_STRING];
-  uint64 amount_in_max = 2 [jstype = JS_STRING];
-  repeated string path = 3;
-  bytes receiver = 4 [(koinos.btype) = ADDRESS];
+  bytes from = 1 [(koinos.btype) = ADDRESS];
+  bytes receiver = 2 [(koinos.btype) = ADDRESS];
+  uint64 amount_out = 3 [jstype = JS_STRING];
+  uint64 amount_in_max = 4 [jstype = JS_STRING];
+  repeated string path = 5;
 }
 
 // @description Get quote depending on reservations
@@ -155,3 +161,8 @@ message get_amount_in_arguments {
 /*
 * Events
 */
+message register_event {
+  bytes pair = 1 [(koinos.btype) = ADDRESS];
+  string token_a = 2;
+  string token_b = 3;
+}

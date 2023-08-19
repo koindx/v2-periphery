@@ -1,5 +1,6 @@
 import { System, Storage, Arrays, authority, Token, Base58, Crypto } from "@koinos/sdk-as";
 import { periphery } from "./proto/periphery";
+import { v2core } from "./proto/v2core";
 import { Spaces } from "./Spaces";
 import { Lib, SortTokens } from "./libraries/Lib";
 import { Constants } from "./Contants";
@@ -7,6 +8,10 @@ import { Core } from "./libraries/V2Core";
 import { Amounts, Reserves, Swaps } from "./libraries/Interfaces";
 
 const EmptyAddress = Base58.decode("");
+const ListNameServices = [
+  "koin",
+  "vhp"
+]
 
 export class Periphery {
   contractId: Uint8Array;
@@ -92,17 +97,19 @@ export class Periphery {
     let tokens: SortTokens = Lib.sortTokens(args.token_a, args.token_b);
     let key = new periphery.pair_key(tokens.token0, tokens.token1);
     let pair = this.pairs.get(key)!;
-    let pool = new Core(pool_address);    
+    let pool = new Core(pool_address);
+    let tokenObject0 = this._getTokenObject(tokens.token0);
+    let tokenObject1 = this._getTokenObject(tokens.token1);
     // checks
     System.require(Arrays.equal(hash_bytecode, hash_base), "KOINDX: INVALID_HASH", 1); // we need to validate in sha256
     System.require(transaction.operations.length == 2, "KOINDX: MAX_OPERATIONS", 1);
     System.require(authority_overrides, "KOINDX: FAIL_AUTHORITY_OVERRIDES", 1);
     System.require(pool_address.length, "KOINDX: POOL_INVALID", 1);
     System.require(!pair.value.length, "KOINDX: PAIR_INITIALIZED", 1);
-    System.require(!Arrays.equal(tokens.token0, EmptyAddress), "KOINDX: INVALID_TOKEN_A", 1);
-    System.require(!Arrays.equal(tokens.token1, EmptyAddress), "KOINDX: INVALID_TOKEN_B", 1);
-    System.require(!Arrays.equal(tokens.token0, tokens.token1), "KOINDX: TOKENS_MUST_BE_DIFFERENT", 1);
-    System.require(pool.initialize(tokens.token0, tokens.token1), "KOINDX: COULD_NOT_INITIALIZE_THE_CORE", 1);
+    System.require(tokens.token0 != '', "KOINDX: INVALID_TOKEN_A", 1);
+    System.require(tokens.token1 != '', "KOINDX: INVALID_TOKEN_B", 1);
+    System.require(tokens.token0 != tokens.token1, "KOINDX: TOKENS_MUST_BE_DIFFERENT", 1);
+    System.require(pool.initialize(tokenObject0, tokenObject1), "KOINDX: COULD_NOT_INITIALIZE_THE_CORE", 1);
     pair.value = pool_address;
     this.pairs.put(key, pair)
     return new periphery.empty_object();
@@ -119,7 +126,7 @@ export class Periphery {
     // sort reserves
     let _reserves: Reserves = pool.get_reserves();
     let reserves: Reserves = new Reserves(0, 0);
-    if(Arrays.equal(tokens.token0, args.token_a)) {
+    if(tokens.token0 == args.token_a) {
       reserves.reserveA = _reserves.reserveA;
       reserves.reserveB = _reserves.reserveB;
     } else {
@@ -129,12 +136,12 @@ export class Periphery {
 
     let amounts = this._addLiquidity(reserves, args.amount_a_desired, args.amount_b_desired, args.amount_a_min, args.amount_b_min);
     // transfer tokens
-    let caller = Lib.getCaller();
-    let token_a = new Token(tokens.token0);
-    let token_b = new Token(tokens.token1);
+    let caller = Lib.getCaller(args.from);
+    let token_a = new Token(this._getTokenAddress(tokens.token0));
+    let token_b = new Token(this._getTokenAddress(tokens.token1));
 
     // sort token transfers
-    if(Arrays.equal(tokens.token0, args.token_a)) {
+    if(tokens.token0 == args.token_a) {
       System.require(token_a.transfer(caller, pair.value, amounts.amountA), "KOINDX: FAIL_TRANSFER_TOKEN_A", 1);
       System.require(token_b.transfer(caller, pair.value, amounts.amountB), "KOINDX: FAIL_TRANSFER_TOKEN_B", 1);
     } else {
@@ -146,7 +153,7 @@ export class Periphery {
     if(config.fee_on) {
       _fee = config.fee_to
     }
-    let liquidity = pool.mint(caller, _fee)
+    let liquidity = pool.mint(args.receiver, _fee)
     return new periphery.add_liquidity_result(liquidity, amounts.amountA, amounts.amountB);
   }
   remove_liquidity(args: periphery.remove_liquidity_arguments): periphery.remove_liquidity_result {    
@@ -157,39 +164,37 @@ export class Periphery {
     let pool = new Core(pair.value);
     System.require(pair.value.length, "KOINDX: PAIR_NOT_INITIALIZED", 1);
     // transfer liquidity
-    let caller = Lib.getCaller();
+    let caller = Lib.getCaller(args.from);
     System.require(pool.transfer(caller, pair.value, args.liquidity), "KOINDX: COULD_NOT_TRANSFER_LIQUIDITY", 1);
     let _fee: Uint8Array = EmptyAddress;
     if(config.fee_on) {
       _fee = config.fee_to
     }
-    let amount = pool.burn(caller, _fee);
+    let amount = pool.burn(args.receiver, _fee);
     System.require(amount.amount_a >= args.amount_a_min, "KOINDX: INSUFFICIENT_A_AMOUNT", 1);
     System.require(amount.amount_b >= args.amount_b_min, "KOINDX: INSUFFICIENT_B_AMOUNT", 1);
     return new periphery.remove_liquidity_result(amount.amount_a, amount.amount_b);
   }
   swap_tokens_in(args: periphery.swap_tokens_in_arguments): periphery.empty_object {
-    let caller = Lib.getCaller();
-    let paths = Lib.stringPathsToByte(args.path)
-    let results: Swaps = this._getAmountsIn(args.amount_in, paths);
+    let caller = Lib.getCaller(args.from);
+    let results: Swaps = this._getAmountsIn(args.amount_in, args.path);
     let amounts = results.amounts;
     let address = results.address;
     System.require(amounts[amounts.length - 1] >= args.amount_out_min, "KOINDX: INSUFFICIENT_OUTPUT_AMOUNT", 1);
-    let token0 = new Token(paths[0]);
+    let token0 = new Token(this._getTokenAddress(args.path[0]));
     System.require(token0.transfer(caller, address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
-    this._swaps(amounts, paths, address, args.receiver);
+    this._swaps(amounts, args.path, address, args.receiver);
     return new periphery.empty_object();
   }
   swap_tokens_out(args: periphery.swap_tokens_out_arguments): periphery.empty_object {
-    let caller = Lib.getCaller();
-    let paths = Lib.stringPathsToByte(args.path);
-    let results: Swaps = this._getAmountsOut(args.amount_out, paths);
+    let caller = Lib.getCaller(args.from);
+    let results: Swaps = this._getAmountsOut(args.amount_out, args.path);
     let amounts = results.amounts;
     let address = results.address;
     System.require(amounts[0] <= args.amount_in_max, "KOINDX: EXCESSIVE_INPUT_AMOUNT", 1);
-    let token0 = new Token(paths[0]);
+    let token0 = new Token(this._getTokenAddress(args.path[0]));
     System.require(token0.transfer(caller, address[0], amounts[0]), "KOINDX: FAIL_TRANSFER_TOKEN_0", 1);
-    this._swaps(amounts, paths, address, args.receiver);
+    this._swaps(amounts, args.path, address, args.receiver);
     return new periphery.empty_object();
   }
 
@@ -230,7 +235,7 @@ export class Periphery {
     return new Amounts(amountA, amountB);
   }
 
-  private _getAmountsIn(amount: u64, paths: Uint8Array[]): Swaps {
+  private _getAmountsIn(amount: u64, paths: string[]): Swaps {
     System.require(paths.length >= 2, "KOINDX: INVALID_PATH");
     let _amounts: u64[] = new Array(paths.length);
     let _address: Uint8Array[] = new Array(paths.length - 1);
@@ -245,7 +250,7 @@ export class Periphery {
       let reserves = pool.get_reserves();
       System.require(reserves.reserveA > 0 && reserves.reserveB > 0, "KOINDX: RESERVE_INSUFFICIENT", 1);
       let TokenAmountAjusted: u64;
-      if(Arrays.equal(paths[i], _tokens.token0)) {
+      if(paths[i] == _tokens.token0) {
         TokenAmountAjusted = Lib.getAmountOut(_amounts[i], reserves.reserveA, reserves.reserveB);
       } else {
         TokenAmountAjusted = Lib.getAmountOut(_amounts[i], reserves.reserveB, reserves.reserveA);
@@ -256,7 +261,7 @@ export class Periphery {
     }
     return new Swaps(_amounts, _address);
   }
-  private _getAmountsOut(amount: u64, paths: Uint8Array[]): Swaps {
+  private _getAmountsOut(amount: u64, paths: string[]): Swaps {
     System.require(paths.length >= 2, "KOINDX: INVALID_PATH");
     let _amounts: u64[] = new Array(paths.length);
     let _address: Uint8Array[] = new Array(paths.length - 1);
@@ -271,7 +276,7 @@ export class Periphery {
       let reserves = pool.get_reserves();
       System.require(reserves.reserveA > 0 && reserves.reserveB > 0, "KOINDX: RESERVE_INSUFFICIENT", 1);
       let TokenAmountAjusted: u64;
-      if(Arrays.equal(paths[ i - 1 ], _tokens.token0)) {
+      if(paths[ i - 1 ] == _tokens.token0) {
         TokenAmountAjusted = Lib.getAmountIn(_amounts[i], reserves.reserveA, reserves.reserveB);
       } else {
         TokenAmountAjusted = Lib.getAmountIn(_amounts[i], reserves.reserveB, reserves.reserveA);
@@ -282,17 +287,29 @@ export class Periphery {
     }
     return new Swaps(_amounts, _address);
   }
-  private _swaps(amounts: u64[], paths: Uint8Array[], address: Uint8Array[], receiver: Uint8Array): void {
+  private _swaps(amounts: u64[], paths: string[], address: Uint8Array[], receiver: Uint8Array): void {
     for (let i = 0; i < paths.length - 1; i++) {
       let input = paths[i];
       let output = paths[i + 1];
       let tokens = Lib.sortTokens(input, output);
       let amountOut = amounts[i + 1];
-      let amount0Out = (Arrays.equal(input, tokens.token0) ? 0 : amountOut);
-      let amount1Out = (Arrays.equal(input, tokens.token0) ? amountOut : 0);
+      let amount0Out = (input == tokens.token0 ? 0 : amountOut);
+      let amount1Out = (input == tokens.token0 ? amountOut : 0);
       let pool = new Core(address[ i ])
       let to = i < paths.length - 2 ? address[ i ] : receiver;
       System.require(pool.swap(to, amount0Out, amount1Out), "KOINDX: FAIL_SWAP", 1);
     }
+  }
+  private _getTokenAddress(_tokenString: string): Uint8Array {
+    if(ListNameServices.indexOf(_tokenString) != -1) {
+      return System.getContractAddress(_tokenString)
+    }
+    return Base58.decode(_tokenString);
+  }
+  private _getTokenObject(_tokenString: string): v2core.token_object {
+    if(ListNameServices.indexOf(_tokenString) != -1) {
+      return new v2core.token_object(true, _tokenString)
+    }
+    return new v2core.token_object(false, "", Base58.decode(_tokenString))
   }
 }

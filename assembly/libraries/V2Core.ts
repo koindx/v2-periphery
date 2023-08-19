@@ -41,7 +41,7 @@ export class Core {
     const res = Protobuf.decode<v2core.burn_result>(callRes.res.object as Uint8Array, v2core.burn_result.decode);
     return res;
   }
-  initialize(token_a: Uint8Array, token_b: Uint8Array): boolean {
+  initialize(token_a: v2core.token_object, token_b: v2core.token_object): boolean {
     const args = new v2core.initialize_arguments(token_a, token_b);
     const callRes = System.call(this._contractId, entries.initialize_entry, Protobuf.encode(args, v2core.initialize_arguments.encode));
     return callRes.code == error.error_code.success;
