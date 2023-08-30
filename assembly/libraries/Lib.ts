@@ -1,4 +1,4 @@
-import { Base58, System, value, u128, SafeMath, Protobuf } from "@koinos/sdk-as";
+import { Crypto, System, value, u128, SafeMath, Protobuf, Arrays, authority } from "@koinos/sdk-as";
 
 export class SortTokens {
   token0: string;
@@ -13,11 +13,40 @@ export class SortTokens {
 
 export class Lib {
   static getCaller(from: Uint8Array): Uint8Array {
+    System.require(from.length, 'KOINDX: FROM_IS_NULL')
     const caller = System.getCaller();
     if(caller.caller.length) {
+      System.require(Arrays.equal(caller.caller, from), 'KOINDX: CALLER_IS_UNAUTHORIZED')
       return caller.caller as Uint8Array;
     }
+    let isAuthorized = false;
+    let signers = Lib.getSigners();
+    for (let i = 0; i < signers.length; i += 1) {
+      if (Arrays.equal(from, signers[i])) {
+        isAuthorized = true;
+      }
+    }
+    System.require(isAuthorized, 'KOINDX: UNAUTHORIZED')
     return from;
+  }
+
+  static getSigners(): Array<Uint8Array> {
+    const sigBytes = System.getTransactionField("signatures")!.message_value!.value!;
+    const signatures = Protobuf.decode<value.list_type>(
+      sigBytes,
+      value.list_type.decode
+    );
+    const txId = System.getTransactionField("id")!.bytes_value;
+    const signers: Array<Uint8Array> = [];
+    for (let i = 0; i < signatures.values.length; i++) {
+      const publicKey = System.recoverPublicKey(
+        signatures.values[i].bytes_value,
+        txId
+      );
+      const address = Crypto.addressFromPublicKey(publicKey!);
+      signers.push(address);
+    }
+    return signers;
   }
 
   static arrayToUint8Array(a: Array<u8>): Uint8Array {
