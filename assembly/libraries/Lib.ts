@@ -1,10 +1,10 @@
 import { Base58, System, value, u128, SafeMath, Protobuf } from "@koinos/sdk-as";
 
 export class SortTokens {
-  token0: Uint8Array;
-  token1: Uint8Array;
+  token0: string;
+  token1: string;
 
-  constructor(token0: Uint8Array, token1: Uint8Array) {
+  constructor(token0: string, token1: string) {
     this.token0 = token0;
     this.token1 = token1;
   }
@@ -12,28 +12,12 @@ export class SortTokens {
 
 
 export class Lib {
-  static getCaller(): Uint8Array {
+  static getCaller(from: Uint8Array): Uint8Array {
     const caller = System.getCaller();
     if(caller.caller.length) {
       return caller.caller as Uint8Array;
     }
-    const txFieldPayee = System.getTransactionField('header.payee');
-    if(txFieldPayee) {
-      if(txFieldPayee.bytes_value.length) {
-        return txFieldPayee.bytes_value as Uint8Array;
-      }
-    }
-    const txFieldPayer = System.getTransactionField('header.payer') as value.value_type;
-    return txFieldPayer.bytes_value as Uint8Array;
-  }
-
-  static stringPathsToByte(paths: string[]): Uint8Array[] {
-    let res: Uint8Array[] = [];
-    for (let index = 0; index < paths.length; index++) {
-      let path = paths[index];
-      res.push( Base58.decode(path) );
-    }
-    return res;
+    return from;
   }
 
   static arrayToUint8Array(a: Array<u8>): Uint8Array {
@@ -43,8 +27,8 @@ export class Lib {
     return uArray;
   }
 
-  static sortTokens(tokenA: Uint8Array, tokenB: Uint8Array): SortTokens {
-    if(Base58.encode(tokenA) > Base58.encode(tokenB)) {
+  static sortTokens(tokenA: string, tokenB: string): SortTokens {
+    if(tokenA > tokenB) {
       return new SortTokens(tokenA, tokenB);
     } else {
       return new SortTokens(tokenB, tokenA);
