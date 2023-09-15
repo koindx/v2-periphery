@@ -33,6 +33,7 @@
     "build:debug": "koinos-sdk-as-cli build-all debug 0 periphery.proto",
     "build:release": "koinos-sdk-as-cli build-all release 0 periphery.proto",
     "test": "koinos-sdk-as-cli run-tests",
-    "deploy": "node scripts/deploy.js"
+    "deploy": "node scripts/deploy.js",
+    "parse": "node scripts/parse.js"
   }
 }
