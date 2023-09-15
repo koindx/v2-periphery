@@ -296,7 +296,7 @@ export class Periphery {
       let amount0Out = (input == tokens.token0 ? 0 : amountOut);
       let amount1Out = (input == tokens.token0 ? amountOut : 0);
       let pool = new Core(address[ i ])
-      let to = i < paths.length - 2 ? address[ i ] : receiver;
+      let to = i < paths.length - 2 ? address[ i + 1 ] : receiver;
       System.require(pool.swap(to, amount0Out, amount1Out), "KOINDX: FAIL_SWAP", 1);
     }
   }
