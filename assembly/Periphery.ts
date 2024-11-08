@@ -12,6 +12,11 @@ const ListNameServices = [
   "koin",
   "vhp"
 ]
+const BlackList = [
+  "15VPnHQgm9yTWGuxCmfsPABJYnDNFymkTM",
+  "19WrWze3XAoMa3Mwqys4rJMP6emZX2wfpH",
+  "1BzymN6NwNyQszkEPkmSjnCLxpLpxHF4p7"
+]
 
 export class Periphery {
   contractId: Uint8Array;
@@ -177,6 +182,8 @@ export class Periphery {
   }
   swap_tokens_in(args: periphery.swap_tokens_in_arguments): periphery.empty_object {
     let caller = Lib.getCaller(args.from);
+    // check blakclist process
+    this._checkBlackList(args.path)
     let results: Swaps = this._getAmountsIn(args.amount_in, args.path);
     let amounts = results.amounts;
     let address = results.address;
@@ -188,6 +195,8 @@ export class Periphery {
   }
   swap_tokens_out(args: periphery.swap_tokens_out_arguments): periphery.empty_object {
     let caller = Lib.getCaller(args.from);
+    // check blakclist process
+    this._checkBlackList(args.path)
     let results: Swaps = this._getAmountsOut(args.amount_out, args.path);
     let amounts = results.amounts;
     let address = results.address;
@@ -311,5 +320,12 @@ export class Periphery {
       return new v2core.token_object(true, _tokenString)
     }
     return new v2core.token_object(false, "", Base58.decode(_tokenString))
+  }
+
+  private _checkBlackList(paths: string[]): void {
+    for (let index = 0; index < paths.length; index++) {
+      let _token = paths[index];
+      System.require(BlackList.indexOf(_token) == -1, "KOINDX: TOKEN_BLACKLIST", 1);
+    }
   }
 }
